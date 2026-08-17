@@ -10,8 +10,6 @@ export function buildApp(): FastifyInstance {
   const app = Fastify({
     logger: { level: env.LOG_LEVEL },
     bodyLimit: 5 * 1024 * 1024,
-    // Keep large request queues alive under heavy concurrency instead of
-    // dropping sockets while renders wait behind the pLimit/BrowserPool gates.
     connectionTimeout: 60_000,
     keepAliveTimeout: 65_000,
   });
@@ -19,15 +17,6 @@ export function buildApp(): FastifyInstance {
   void app.register(sensible);
 
   app.setErrorHandler((error: FastifyError, request, reply) => {
-    // The PDF route streams its response. If the client disconnects
-    // mid-stream (routine under load-testing tools tearing connections down
-    // between stages), Fastify still routes the resulting stream error here
-    // — sometimes before either reply.sent or reply.raw.headersSent flips,
-    // so neither flag is a reliable guard on its own. Whatever the cause,
-    // reply.send() can itself throw a second, misleading error (e.g.
-    // FST_ERR_REP_INVALID_PAYLOAD_TYPE) if the response can no longer be
-    // altered. Wrapping in try/catch guarantees this handler never produces
-    // an unhandled secondary error under load.
     try {
       if (error instanceof ZodError) {
         return reply.status(400).send({ error: "ValidationError", issues: error.issues });
@@ -62,4 +51,13 @@ export function buildApp(): FastifyInstance {
   void app.register(pdfRoutes, { prefix: "/v1/docs" });
 
   return app;
+}
+
+// 1. Instanciar la app
+const app = buildApp();
+
+// 2. Exportar la función handler por defecto requerida por Vercel
+export default async function handler(req: any, res: any) {
+  await app.ready();
+  app.server.emit("request", req, res);
 }
