@@ -1,4 +1,6 @@
-import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
+import { type Browser, type BrowserContext, type Page } from "playwright";
+import chromium from "@sparticuz/chromium";
+import { chromium as playwrightChromium } from "playwright-core";
 import { env } from "../config/env.js";
 import { logger } from "../utils/logger.js";
 
@@ -46,10 +48,31 @@ class BrowserPool {
     }
 
     if (!this.launching) {
-      this.launching = chromium
-        .launch({ headless: true, args: PERFORMANCE_ARGS })
+      this.launching = (async () => {
+        // Solución al error 1: Uso de sintaxis de corchetes para noPropertyAccessFromIndexSignature
+        const isVercel = !!process.env["VERCEL"];
+
+        if (isVercel) {
+          // Entorno Serverless (Vercel)
+          const executablePath = await chromium.executablePath();
+
+          return await playwrightChromium.launch({
+            args: [...chromium.args, ...PERFORMANCE_ARGS],
+            executablePath,
+            // Solución a los errores 2 y 3: Se pasa un booleano directo
+            headless: true,
+          });
+        }
+
+        // Entorno Local (Desarrollo)
+        const { chromium: localChromium } = await import("playwright");
+        return await localChromium.launch({
+          headless: true,
+          args: PERFORMANCE_ARGS,
+        });
+      })()
         .then((browser) => {
-          this.browser = browser;
+          this.browser = browser as unknown as Browser;
           this.pagesServedSinceLaunch = 0;
           this.recycleRequested = false;
           browser.on("disconnected", () => {
@@ -57,7 +80,7 @@ class BrowserPool {
             this.browser = null;
           });
           logger.info("Chromium browser launched");
-          return browser;
+          return this.browser;
         })
         .finally(() => {
           this.launching = null;
