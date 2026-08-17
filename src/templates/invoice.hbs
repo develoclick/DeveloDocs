@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Invoice {{invoiceNumber}}</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      color: #1e2330;
+      margin: 0;
+      padding: 48px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .sheet {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-bottom: 24px;
+      border-bottom: 3px solid #2f3b52;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .brand .name {
+      font-size: 22px;
+      font-weight: 700;
+      color: #2f3b52;
+    }
+
+    .brand .address {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .invoice-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .invoice-meta .badge {
+      background: #2f3b52;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+
+    .invoice-meta .number {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .invoice-meta .date {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    /* Parties */
+    .parties {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .party {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: #f4f6f9;
+      border-radius: 8px;
+      padding: 16px 20px;
+    }
+
+    .party .label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #8a93a6;
+    }
+
+    .party .name {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .party .detail {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    /* Items table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #8a93a6;
+      padding: 10px 12px;
+      border-bottom: 2px solid #e2e5ea;
+    }
+
+    thead th.numeric,
+    tbody td.numeric {
+      text-align: right;
+    }
+
+    tbody td {
+      padding: 12px;
+      border-bottom: 1px solid #e2e5ea;
+      font-size: 13px;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Totals */
+    .totals {
+      align-self: flex-end;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 260px;
+    }
+
+    .totals .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .totals .row.grand {
+      margin-top: 4px;
+      padding-top: 12px;
+      border-top: 2px solid #2f3b52;
+      font-size: 17px;
+      font-weight: 700;
+      color: #2f3b52;
+    }
+
+    footer {
+      padding-top: 16px;
+      border-top: 1px solid #e2e5ea;
+      font-size: 11px;
+      color: #9aa2b1;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <header>
+      <div class="brand">
+        <span class="name">{{company.name}}</span>
+        <span class="address">{{company.address}}</span>
+      </div>
+      <div class="invoice-meta">
+        <span class="badge">Invoice</span>
+        <span class="number">{{invoiceNumber}}</span>
+        <span class="date">Issued {{formatDate issueDate}}</span>
+      </div>
+    </header>
+
+    <div class="parties">
+      <div class="party">
+        <span class="label">Billed To</span>
+        <span class="name">{{customer.name}}</span>
+        <span class="detail">{{customer.email}}</span>
+      </div>
+      <div class="party">
+        <span class="label">Due Date</span>
+        <span class="name">{{formatDate dueDate}}</span>
+        <span class="detail">Payment terms: Net 15</span>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th class="numeric">Qty</th>
+          <th class="numeric">Unit Price</th>
+          <th class="numeric">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each items}}
+        <tr>
+          <td>{{this.description}}</td>
+          <td class="numeric">{{this.quantity}}</td>
+          <td class="numeric">{{currency this.unitPrice ../currency}}</td>
+          <td class="numeric">{{currency this.subtotal ../currency}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <div class="row">
+        <span>Subtotal</span>
+        <span>{{currency subtotal currency}}</span>
+      </div>
+      <div class="row">
+        <span>Tax</span>
+        <span>{{currency tax currency}}</span>
+      </div>
+      <div class="row grand">
+        <span>Total</span>
+        <span>{{currency total currency}}</span>
+      </div>
+    </div>
+
+    <footer>
+      Thank you for your business — generated by DeveloDocs
+    </footer>
+  </div>
+</body>
+</html>

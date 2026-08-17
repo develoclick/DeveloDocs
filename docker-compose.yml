@@ -1,0 +1,27 @@
+services:
+  develodocs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: develodocs:local
+    container_name: develodocs
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      LOG_LEVEL: info
+      BROWSER_POOL_SIZE: 3
+      BROWSER_IDLE_TIMEOUT_MS: 60000
+    restart: unless-stopped
+    # Chromium needs more than Docker's default 64MB /dev/shm to avoid
+    # crashing on larger pages; bump it instead of using --disable-dev-shm-usage
+    # as the sole mitigation.
+    shm_size: "1gb"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
