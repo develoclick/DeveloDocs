@@ -14,7 +14,7 @@
  */
 import autocannon from "autocannon";
 
-const BASE_URL = process.env.BENCHMARK_URL ?? "http://127.0.0.1:3000";
+const BASE_URL = process.env.BENCHMARK_URL ?? "https://develo-docs.vercel.app";
 
 const payload = JSON.stringify({
   templateName: "invoice",
